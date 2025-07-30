@@ -119,6 +119,9 @@
         .order-tote {
             transition: all 0.2s ease-in-out;
             cursor: pointer;
+            padding: 4px;
+            font-size: 0.8rem;
+            line-height: 1.2;
         }
 
         .tote-highlight {
@@ -134,6 +137,12 @@
             border-color: var(--color-finished-border) !important;
             color: var(--primary-darkest) !important;
             animation: none; /* Stop pulsing when selected */
+        }
+        
+        .tote-empty {
+            background-color: #F3F4F6;
+            color: #9CA3AF;
+            cursor: not-allowed;
         }
 
         @keyframes pulse-border {
@@ -174,7 +183,7 @@
                     </div>
                     <div class="flex items-center space-x-4">
                         <div class="text-right text-xs text-primary-dark">
-                            <div>01:45 PM Wed 2025</div>
+                            <div>02:34 PM Wed 2025</div>
                             <div>John Doe</div>
                         </div>
                         <a href="#" class="cursor-pointer">
@@ -249,10 +258,10 @@
                     <div id="tote-map-container" class="my-auto">
                         <p class="text-sm font-medium text-center mb-2">PLACE IN TOTE</p>
                         <div id="tote-map" class="grid grid-cols-2 grid-rows-2 gap-2 aspect-square max-w-[200px] mx-auto">
-                            <div id="tote-2" class="order-tote border-2 border-gray-300 rounded-lg flex items-center justify-center font-bold text-gray-400">Tote 2</div>
-                            <div id="tote-1" class="order-tote border-2 border-gray-300 rounded-lg flex items-center justify-center font-bold text-gray-400">Tote 1</div>
-                            <div id="tote-3" class="order-tote border-2 border-gray-300 rounded-lg flex items-center justify-center font-bold text-gray-400">Tote 3</div>
-                            <div id="tote-4" class="order-tote border-2 border-gray-300 rounded-lg flex items-center justify-center font-bold text-gray-400">Tote 4</div>
+                            <div id="tote-2" class="order-tote border-2 border-gray-300 rounded-lg flex items-center justify-center font-bold text-center"></div>
+                            <div id="tote-1" class="order-tote border-2 border-gray-300 rounded-lg flex items-center justify-center font-bold text-center"></div>
+                            <div id="tote-3" class="order-tote border-2 border-gray-300 rounded-lg flex items-center justify-center font-bold text-center"></div>
+                            <div id="tote-4" class="order-tote border-2 border-gray-300 rounded-lg flex items-center justify-center font-bold text-center"></div>
                         </div>
                     </div>
 
@@ -284,7 +293,6 @@
             
             let orderData = {};
             let binData = [];
-            let orderToToteMap = {};
 
             // --- DATA GENERATION --- //
             function generateInitialData() {
@@ -513,25 +521,38 @@
                 // --- Setup Tote Map ---
                 allTotes.forEach(tote => {
                     // Reset state from previous modal openings
-                    tote.classList.remove('tote-highlight', 'tote-selected');
-                    tote.style.borderColor = ''; // Reset border color
+                    tote.className = 'order-tote border-2 border-gray-300 rounded-lg flex items-center justify-center font-bold text-center';
+                    tote.style.backgroundColor = '';
+                    tote.style.borderColor = '';
 
                     const toteId = parseInt(tote.id.split('-')[1]);
-                    if (toteId === requiredToteId) {
-                        tote.classList.add('tote-highlight');
-                        tote.style.borderColor = `var(--${order.colorClass}-border)`;
+                    // Find which order is assigned to this tote
+                    const assignedOrderEntry = Object.entries(orderData).find(([id, data]) => data.toteId === toteId);
+
+                    if (assignedOrderEntry) {
+                        const [assignedOrderId, assignedOrderData] = assignedOrderEntry;
+                        tote.textContent = assignedOrderId;
+                        tote.classList.add(assignedOrderData.colorClass); // Use background color class
+                        
+                        // Highlight the required tote for the current item
+                        if (toteId === requiredToteId) {
+                            tote.classList.add('tote-highlight');
+                            tote.style.borderColor = `var(--${assignedOrderData.colorClass}-border)`;
+                        }
+                    } else {
+                        tote.textContent = 'Empty';
+                        tote.classList.add('tote-empty');
                     }
 
                     tote.onclick = () => {
-                        if (toteId === requiredToteId) {
+                        // Only allow clicking the correct, non-empty tote
+                        if (toteId === requiredToteId && assignedOrderEntry) {
                             // Deselect if clicking again
                             if (tote.classList.contains('tote-selected')) {
                                 tote.classList.remove('tote-selected');
                                 tote.classList.add('tote-highlight');
                                 isToteSelected = false;
                             } else {
-                                // Remove selected from any other tote (though not possible in this logic)
-                                allTotes.forEach(t => t.classList.remove('tote-selected'));
                                 // Select this tote
                                 tote.classList.add('tote-selected');
                                 tote.classList.remove('tote-highlight');
