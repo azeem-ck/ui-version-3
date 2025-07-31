@@ -183,7 +183,7 @@
                     </div>
                     <div class="flex items-center space-x-4">
                         <div class="text-right text-xs text-primary-dark">
-                            <div>01:40 PM Thu 2025</div>
+                            <div>02:09 PM Thu 2025</div>
                             <div>John Doe</div>
                         </div>
                         <a href="#" class="cursor-pointer">
@@ -301,9 +301,9 @@
             // --- DATA GENERATION --- //
             function generateInitialData() {
                 orderData = {
-                    "ORD-A1B2": { colorClass: 'order-1', name: "Order A1B2", items: 0, picked: 0, toteId: 1 },
-                    "ORD-C3D4": { colorClass: 'order-2', name: "Order C3D4", items: 0, picked: 0, toteId: 2 },
-                    "ORD-E5F6": { colorClass: 'order-3', name: "Order E5F6", items: 0, picked: 0, toteId: 3 },
+                    "ORD-A1B2": { colorClass: 'order-1', name: "Order A1B2", items: 0, picked: 0, toteId: 1, completed: false },
+                    "ORD-C3D4": { colorClass: 'order-2', name: "Order C3D4", items: 0, picked: 0, toteId: 2, completed: false },
+                    "ORD-E5F6": { colorClass: 'order-3', name: "Order E5F6", items: 0, picked: 0, toteId: 3, completed: false },
                 };
                 binData = [
                     { id: '1.1.1.', type: 'empty' }, { id: '2.1.1.', type: '2-compartment', items: [{ compartment: 0, orderId: "ORD-A1B2" }] }, { id: '3.1.1.', type: '1-compartment', items: [{ compartment: 0, orderId: "ORD-C3D4" }] }, { id: '4.1.1.', type: '4-compartment', items: [ { compartment: 0, orderId: "ORD-A1B2" }, { compartment: 1, orderId: "ORD-C3D4" }, { compartment: 2, orderId: "ORD-E5F6" }, { compartment: 3, orderId: "ORD-A1B2" } ] }, { id: '5.1.1.', type: '1-compartment', items: [{ compartment: 0, orderId: "ORD-E5F6", initialState: 'selected' }] }, { id: '6.1.1.', type: 'empty' }, { id: '7.1.1.', type: '2-compartment', items: [ { compartment: 0, orderId: "ORD-C3D4" }, { compartment: 1, orderId: "ORD-E5F6" } ] }, { id: '8.1.1.', type: 'empty' }, { id: '9.1.1.', type: '1-compartment', items: [{ compartment: 0, orderId: "ORD-A1B2", initialState: 'finished' }] }, { id: '10.1.1.', type: 'empty' }, { id: '11.1.1.', type: '4-compartment', items: [ { compartment: 1, orderId: "ORD-C3D4" }, { compartment: 2, orderId: "ORD-E5F6" } ] }, { id: '12.1.1.', type: 'empty' },
@@ -323,7 +323,8 @@
                         name: `Order ${randomId}`, 
                         items: 0, 
                         picked: 0,
-                        toteId: toteAssignments[i]
+                        toteId: toteAssignments[i],
+                        completed: false
                     };
                 }
                 const newOrderIds = Object.keys(orderData);
@@ -374,8 +375,9 @@
 
                 if (selectedItem) {
                     const orderId = selectedItem.dataset.orderId;
-                    const colorClass = orderData[orderId]?.colorClass;
-                    if (colorClass) {
+                    const order = orderData[orderId];
+                    if (order && !order.completed) {
+                        const colorClass = order.colorClass;
                         binLocation.classList.remove('border-waiting');
                         binLocation.classList.add(`border-selected-${colorClass.split('-')[1]}`);
                     }
@@ -390,9 +392,9 @@
                 Object.keys(orderData).forEach(orderId => {
                     const order = orderData[orderId];
                     if (!order) return;
-                    const legendItem = document.createElement('div');
-                    const isComplete = order.items > 0 && order.picked === order.items;
+                    const isComplete = order.completed;
                     
+                    const legendItem = document.createElement('div'); // FIX: Declaration was missing
                     legendItem.className = 'order-legend-item';
                     legendItem.innerHTML = `
                         <div class="order-color-dot ${order.colorClass}"></div>
@@ -407,10 +409,12 @@
             }
 
             function checkAllTasksFinished() {
-                const allSelectableItems = document.querySelectorAll('.selectable-item');
-                const allFinishedItems = document.querySelectorAll('.item-finished');
-                
-                if (allSelectableItems.length > 0 && allSelectableItems.length === allFinishedItems.length) {
+                // FIX: Check based on the data model, not the DOM, for reliability.
+                // This checks if every order that has items assigned is marked as completed.
+                const activeOrders = Object.values(orderData).filter(order => order.items > 0);
+                const allOrdersComplete = activeOrders.length > 0 && activeOrders.every(order => order.completed);
+
+                if (allOrdersComplete) {
                     mainDoneBtn.disabled = false;
                     mainDoneBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
                     mainDoneBtn.classList.add('bg-green-500', 'hover:bg-green-600');
@@ -539,13 +543,19 @@
 
                     if (assignedOrderEntry) {
                         const [assignedOrderId, assignedOrderData] = assignedOrderEntry;
-                        tote.textContent = assignedOrderId;
-                        tote.classList.add(assignedOrderData.colorClass); // Use background color class
                         
-                        // Highlight the required tote for the current item
-                        if (toteId === requiredToteId) {
-                            tote.classList.add('tote-highlight');
-                            tote.style.borderColor = `var(--${assignedOrderData.colorClass}-border)`;
+                        if (assignedOrderData.completed) {
+                            tote.textContent = 'Empty';
+                            tote.classList.add('tote-empty');
+                        } else {
+                            tote.textContent = assignedOrderId;
+                            tote.classList.add(assignedOrderData.colorClass); // Use background color class
+                            
+                            // Highlight the required tote for the current item
+                            if (toteId === requiredToteId) {
+                                tote.classList.add('tote-highlight');
+                                tote.style.borderColor = `var(--${assignedOrderData.colorClass}-border)`;
+                            }
                         }
                     } else {
                         tote.textContent = 'Empty';
@@ -554,7 +564,7 @@
 
                     tote.onclick = () => {
                         // Only allow clicking the correct, non-empty tote
-                        if (toteId === requiredToteId && assignedOrderEntry) {
+                        if (toteId === requiredToteId && assignedOrderEntry && !assignedOrderEntry[1].completed) {
                             // Deselect if clicking again
                             if (tote.classList.contains('tote-selected')) {
                                 tote.classList.remove('tote-selected');
@@ -601,8 +611,8 @@
                     // Check for completion
                     if (order.items > 0 && order.picked === order.items) {
                         setTimeout(() => showAnimation('completion-animation', `Order ${orderId} Complete!`), 100);
-                        // Remove the completed order from the active data
-                        delete orderData[orderId]; 
+                        // Mark the order as completed instead of deleting it, to preserve tote mapping
+                        orderData[orderId].completed = true;
                     }
                 }
                 
@@ -620,23 +630,23 @@
                 binsGrid.innerHTML = '';
                 let hasSetInitialSelected = false;
                 
-                // Reset item counts
-                Object.keys(orderData).forEach(id => {
-                    orderData[id].items = 0;
-                    orderData[id].picked = 0;
+                // Reset item counts but preserve completion status
+                Object.values(orderData).forEach(order => {
+                    order.items = 0;
+                    order.picked = 0;
                 });
                 
                 // Recalculate item counts based on current bins
                 binData.forEach(data => {
                     if (data.items) {
                         data.items.forEach(item => {
-                            if (orderData[item.orderId]) {
-                                orderData[item.orderId].items++;
+                            const order = orderData[item.orderId];
+                            if (order && !order.completed) {
+                                order.items++;
                             }
                         });
                     }
                 });
-
 
                 binData.forEach(data => {
                     const binWrapper = document.createElement('div');
@@ -657,13 +667,11 @@
                                 const order = orderData[itemData.orderId];
 
                                 let stateClass = 'item-waiting';
-                                if (itemData.initialState === 'selected' && !hasSetInitialSelected) {
+                                if (order.completed) {
+                                    stateClass = 'item-finished';
+                                } else if (itemData.initialState === 'selected' && !hasSetInitialSelected) {
                                     stateClass = 'item-selected';
                                     hasSetInitialSelected = true;
-                                }
-                                if (itemData.initialState === 'finished') {
-                                    stateClass = 'item-finished';
-                                    order.picked++;
                                 }
                                 
                                 compartmentsHtml += `<div class="rounded-md cursor-pointer transition-all selectable-item ${stateClass} ${order.colorClass}" data-order-id="${itemData.orderId}" data-order-color-class="${order.colorClass}">${stateClass === 'item-finished' ? getIconSvg() : ''}</div>`;
