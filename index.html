@@ -128,7 +128,7 @@
             animation: pulse-border 1.5s infinite;
             font-weight: 700 !important;
             color: var(--primary-darkest) !important;
-            border-width: 3px !important;
+            border-color: transparent !important;
         }
 
         .tote-selected {
@@ -183,7 +183,7 @@
                     </div>
                     <div class="flex items-center space-x-4">
                         <div class="text-right text-xs text-primary-dark">
-                            <div>02:09 PM Thu 2025</div>
+                            <div id="date-time">01:40 PM Thu 2025</div>
                             <div>John Doe</div>
                         </div>
                         <a href="#" class="cursor-pointer">
@@ -262,8 +262,8 @@
                     <div id="tote-map-container" class="my-auto">
                         <p class="text-sm font-medium text-center mb-2">Put Wall Location</p>
                         <div id="tote-map" class="grid grid-cols-2 grid-rows-2 gap-2 aspect-square max-w-[200px] mx-auto">
-                            <div id="tote-2" class="order-tote border-2 border-gray-300 rounded-lg flex items-center justify-center font-bold text-center"></div>
                             <div id="tote-1" class="order-tote border-2 border-gray-300 rounded-lg flex items-center justify-center font-bold text-center"></div>
+                            <div id="tote-2" class="order-tote border-2 border-gray-300 rounded-lg flex items-center justify-center font-bold text-center"></div>
                             <div id="tote-3" class="order-tote border-2 border-gray-300 rounded-lg flex items-center justify-center font-bold text-center"></div>
                             <div id="tote-4" class="order-tote border-2 border-gray-300 rounded-lg flex items-center justify-center font-bold text-center"></div>
                         </div>
@@ -293,13 +293,31 @@
             const modal = document.getElementById('pickup-modal');
             const orderLegend = document.getElementById('order-legend');
             const mainDoneBtn = document.getElementById('main-done-btn');
+            const dateTimeElement = document.getElementById('date-time');
             let currentSelectedItem = null;
             
             let orderData = {};
             let binData = [];
+            // This will hold the static mapping of totes for the current wave
+            let waveToteMapping = {};
+
+            // --- DATE & TIME --- //
+            function updateDateTime() {
+                const now = new Date();
+                const options = { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: true };
+                const timeString = now.toLocaleTimeString('en-US', options).replace(' ', '');
+                const yearString = now.getFullYear();
+                dateTimeElement.textContent = `${timeString} ${now.toLocaleDateString('en-US', {weekday:'short'})} ${yearString}`;
+            }
 
             // --- DATA GENERATION --- //
             function generateInitialData() {
+                waveToteMapping = {
+                    1: "ORD-A1B2",
+                    2: "ORD-C3D4",
+                    3: "ORD-E5F6",
+                    4: null
+                };
                 orderData = {
                     "ORD-A1B2": { colorClass: 'order-1', name: "Order A1B2", items: 0, picked: 0, toteId: 1, completed: false },
                     "ORD-C3D4": { colorClass: 'order-2', name: "Order C3D4", items: 0, picked: 0, toteId: 2, completed: false },
@@ -311,23 +329,27 @@
             }
             
             function generateNewWave() {
-                // 1. Generate new random orders and assign to totes
+                // 1. Generate new random orders and assign them to static tote locations
                 orderData = {};
+                waveToteMapping = {}; // Reset static mapping
                 const newOrderColors = ['order-1', 'order-2', 'order-3'];
-                const toteAssignments = [1, 2, 3, 4].sort(() => 0.5 - Math.random()); // Shuffle totes
+                const toteAssignments = [1, 2, 3]; 
 
                 for (let i = 0; i < 3; i++) {
                     const randomId = `ORD-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+                    const assignedTote = toteAssignments[i];
                     orderData[randomId] = { 
                         colorClass: newOrderColors[i], 
                         name: `Order ${randomId}`, 
                         items: 0, 
                         picked: 0,
-                        toteId: toteAssignments[i],
+                        toteId: assignedTote,
                         completed: false
                     };
+                    // Populate the static mapping for the new wave
+                    waveToteMapping[assignedTote] = randomId;
                 }
-                const newOrderIds = Object.keys(orderData);
+                waveToteMapping[4] = null; // Ensure tote 4 is explicitly empty
 
                 // 2. Generate new random bin configurations
                 binData = [];
@@ -346,6 +368,7 @@
                         for (let j = 0; j < compartmentCount; j++) {
                             // 50% chance to place an item in a compartment
                             if (Math.random() > 0.5) {
+                                const newOrderIds = Object.keys(orderData);
                                 const randomOrderId = newOrderIds[Math.floor(Math.random() * newOrderIds.length)];
                                 newBin.items.push({ compartment: j, orderId: randomOrderId });
                             }
@@ -375,9 +398,8 @@
 
                 if (selectedItem) {
                     const orderId = selectedItem.dataset.orderId;
-                    const order = orderData[orderId];
-                    if (order && !order.completed) {
-                        const colorClass = order.colorClass;
+                    const colorClass = orderData[orderId]?.colorClass;
+                    if (colorClass) {
                         binLocation.classList.remove('border-waiting');
                         binLocation.classList.add(`border-selected-${colorClass.split('-')[1]}`);
                     }
@@ -389,32 +411,30 @@
             
             function updateOrderLegend() {
                 orderLegend.innerHTML = '';
-                Object.keys(orderData).forEach(orderId => {
-                    const order = orderData[orderId];
-                    if (!order) return;
-                    const isComplete = order.completed;
-                    
-                    const legendItem = document.createElement('div'); // FIX: Declaration was missing
-                    legendItem.className = 'order-legend-item';
-                    legendItem.innerHTML = `
-                        <div class="order-color-dot ${order.colorClass}"></div>
-                        <div>
-                            <div class="font-semibold text-sm text-primary-darkest">${order.name}</div>
-                            <div class="text-xs text-gray-500">Lines: ${order.picked} of ${order.items}</div>
-                            ${isComplete ? `<div class="font-bold text-green-600 text-xs mt-1">COMPLETED</div>` : ''}
-                        </div>
-                    `;
-                    orderLegend.appendChild(legendItem);
-                });
+                Object.values(orderData)
+                    .filter(order => !order.completed)
+                    .forEach(order => {
+                        const legendItem = document.createElement('div');
+                        const isComplete = order.items > 0 && order.picked === order.items;
+                        
+                        legendItem.className = 'order-legend-item';
+                        legendItem.innerHTML = `
+                            <div class="order-color-dot ${order.colorClass}"></div>
+                            <div>
+                                <div class="font-semibold text-sm text-primary-darkest">${order.name}</div>
+                                <div class="text-xs text-gray-500">Lines: ${order.picked} of ${order.items}</div>
+                                ${isComplete ? `<div class="font-bold text-green-600 text-xs mt-1">COMPLETED</div>` : ''}
+                            </div>
+                        `;
+                        orderLegend.appendChild(legendItem);
+                    });
             }
 
             function checkAllTasksFinished() {
-                // FIX: Check based on the data model, not the DOM, for reliability.
-                // This checks if every order that has items assigned is marked as completed.
-                const activeOrders = Object.values(orderData).filter(order => order.items > 0);
-                const allOrdersComplete = activeOrders.length > 0 && activeOrders.every(order => order.completed);
-
-                if (allOrdersComplete) {
+                const allSelectableItems = document.querySelectorAll('.selectable-item');
+                const allFinishedItems = document.querySelectorAll('.item-finished');
+                
+                if (allSelectableItems.length > 0 && allSelectableItems.length === allFinishedItems.length) {
                     mainDoneBtn.disabled = false;
                     mainDoneBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
                     mainDoneBtn.classList.add('bg-green-500', 'hover:bg-green-600');
@@ -461,7 +481,7 @@
                 // --- Helper to update the modal's "Done" button state ---
                 const updateModalDoneButtonState = () => {
                     const isQtyMet = currentCount === pickupQty;
-                    const isReady = isQtyMet && isToteSelected;
+                    const isReady = isToteSelected;
                     
                     doneBtn.disabled = !isReady;
                     doneBtn.classList.toggle('disabled-button', !isReady);
@@ -477,6 +497,7 @@
                     const allCompartments = Array.from(binGrid.children);
                     const totalCompartments = allCompartments.length;
                     const selectedIndex = allCompartments.indexOf(item);
+                    if (totalCompartments === 1) partitionNumber = 1;
                     if (totalCompartments === 2) partitionNumber = [2, 1][selectedIndex];
                     else if (totalCompartments === 4) partitionNumber = [2, 1, 3, 4][selectedIndex];
                 }
@@ -493,11 +514,12 @@
                 
                 // --- Style Quantity Counter ---
                 const qtyContainer = document.getElementById('modal-qty-container');
-                qtyContainer.style.borderColor = `var(--${order.colorClass}-border)`;
-                qtyContainer.style.backgroundColor = `var(--${order.colorClass}-bg)`;
-                counterDisplay.style.color = `var(--${order.colorClass}-border)`;
-                plusBtn.style.backgroundColor = `var(--${order.colorClass}-border)`;
-                minusBtn.style.backgroundColor = `var(--${order.colorClass}-border)`;
+                const orderColorVar = order.colorClass; // e.g., 'order-1'
+                qtyContainer.style.borderColor = `var(--${orderColorVar}-border)`;
+                qtyContainer.style.backgroundColor = `var(--${orderColorVar}-bg)`;
+                counterDisplay.style.color = `var(--${orderColorVar}-border)`;
+                plusBtn.style.backgroundColor = 'var(--primary-darkest)';
+                minusBtn.style.backgroundColor = 'var(--primary-darkest)';
                 plusBtn.style.color = 'white';
                 minusBtn.style.color = 'white';
 
@@ -530,7 +552,7 @@
                 plusBtn.onclick = () => { if (currentCount < pickupQty) { currentCount++; updateCounterDisplay(); } };
                 minusBtn.onclick = () => { if (currentCount > 0) { currentCount--; updateCounterDisplay(); } };
                 
-                // --- Setup Tote Map ---
+                // --- Setup Tote Map (using the static waveToteMapping) ---
                 allTotes.forEach(tote => {
                     // Reset state from previous modal openings
                     tote.className = 'order-tote border-2 border-gray-300 rounded-lg flex items-center justify-center font-bold text-center';
@@ -538,33 +560,29 @@
                     tote.style.borderColor = '';
 
                     const toteId = parseInt(tote.id.split('-')[1]);
-                    // Find which order is assigned to this tote
-                    const assignedOrderEntry = Object.entries(orderData).find(([id, data]) => data.toteId === toteId);
+                    // Get the orderId that was originally assigned to this tote for this wave
+                    const assignedOrderId = waveToteMapping[toteId];
 
-                    if (assignedOrderEntry) {
-                        const [assignedOrderId, assignedOrderData] = assignedOrderEntry;
+                    // Check if that order is still active (i.e., exists and is not marked as completed)
+                    if (assignedOrderId && orderData[assignedOrderId] && !orderData[assignedOrderId].completed) {
+                        const assignedOrderData = orderData[assignedOrderId];
+                        tote.textContent = assignedOrderId;
+                        tote.classList.add(assignedOrderData.colorClass);
                         
-                        if (assignedOrderData.completed) {
-                            tote.textContent = 'Empty';
-                            tote.classList.add('tote-empty');
-                        } else {
-                            tote.textContent = assignedOrderId;
-                            tote.classList.add(assignedOrderData.colorClass); // Use background color class
-                            
-                            // Highlight the required tote for the current item
-                            if (toteId === requiredToteId) {
-                                tote.classList.add('tote-highlight');
-                                tote.style.borderColor = `var(--${assignedOrderData.colorClass}-border)`;
-                            }
+                        // Highlight the required tote for the current item
+                        if (toteId === requiredToteId) {
+                            tote.classList.add('tote-highlight');
                         }
                     } else {
+                        // The tote is either unassigned or its order was completed
                         tote.textContent = 'Empty';
                         tote.classList.add('tote-empty');
                     }
 
                     tote.onclick = () => {
-                        // Only allow clicking the correct, non-empty tote
-                        if (toteId === requiredToteId && assignedOrderEntry && !assignedOrderEntry[1].completed) {
+                        const clickAssignedOrderId = waveToteMapping[toteId];
+                        // Only allow clicking the correct, non-empty (active) tote
+                        if (toteId === requiredToteId && clickAssignedOrderId && orderData[clickAssignedOrderId] && !orderData[clickAssignedOrderId].completed) {
                             // Deselect if clicking again
                             if (tote.classList.contains('tote-selected')) {
                                 tote.classList.remove('tote-selected');
@@ -572,6 +590,7 @@
                                 isToteSelected = false;
                             } else {
                                 // Select this tote
+                                allTotes.forEach(t => t.classList.remove('tote-selected'));
                                 tote.classList.add('tote-selected');
                                 tote.classList.remove('tote-highlight');
                                 isToteSelected = true;
@@ -611,7 +630,7 @@
                     // Check for completion
                     if (order.items > 0 && order.picked === order.items) {
                         setTimeout(() => showAnimation('completion-animation', `Order ${orderId} Complete!`), 100);
-                        // Mark the order as completed instead of deleting it, to preserve tote mapping
+                        // Mark the order as completed instead of deleting it
                         orderData[orderId].completed = true;
                     }
                 }
@@ -630,7 +649,7 @@
                 binsGrid.innerHTML = '';
                 let hasSetInitialSelected = false;
                 
-                // Reset item counts but preserve completion status
+                // Reset item counts
                 Object.values(orderData).forEach(order => {
                     order.items = 0;
                     order.picked = 0;
@@ -640,13 +659,13 @@
                 binData.forEach(data => {
                     if (data.items) {
                         data.items.forEach(item => {
-                            const order = orderData[item.orderId];
-                            if (order && !order.completed) {
-                                order.items++;
+                            if (orderData[item.orderId]) {
+                                orderData[item.orderId].items++;
                             }
                         });
                     }
                 });
+
 
                 binData.forEach(data => {
                     const binWrapper = document.createElement('div');
@@ -667,11 +686,13 @@
                                 const order = orderData[itemData.orderId];
 
                                 let stateClass = 'item-waiting';
-                                if (order.completed) {
-                                    stateClass = 'item-finished';
-                                } else if (itemData.initialState === 'selected' && !hasSetInitialSelected) {
+                                if (itemData.initialState === 'selected' && !hasSetInitialSelected) {
                                     stateClass = 'item-selected';
                                     hasSetInitialSelected = true;
+                                }
+                                if (itemData.initialState === 'finished') {
+                                    stateClass = 'item-finished';
+                                    order.picked++;
                                 }
                                 
                                 compartmentsHtml += `<div class="rounded-md cursor-pointer transition-all selectable-item ${stateClass} ${order.colorClass}" data-order-id="${itemData.orderId}" data-order-color-class="${order.colorClass}">${stateClass === 'item-finished' ? getIconSvg() : ''}</div>`;
@@ -726,6 +747,8 @@
             // --- START APP --- //
             generateInitialData();
             initializeApp();
+            updateDateTime();
+            setInterval(updateDateTime, 60000); // Update every minute
         });
     </script>
 
