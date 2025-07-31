@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Order Warehouse Pickup UI</title>
+    <title>Multi-Order Carte+ Pickup UI</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Inter -->
@@ -183,7 +183,7 @@
                     </div>
                     <div class="flex items-center space-x-4">
                         <div class="text-right text-xs text-primary-dark">
-                            <div>02:34 PM Wed 2025</div>
+                            <div>01:32 PM Thu 2025</div>
                             <div>John Doe</div>
                         </div>
                         <a href="#" class="cursor-pointer">
@@ -221,19 +221,19 @@
 
     <!-- Modal Dialog -->
     <div id="pickup-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl">
             <div class="p-6 grid grid-cols-2 gap-6">
                 <!-- Left Column: Images -->
                 <div class="space-y-4">
+                    <div>
+                        <img id="modal-sku-image" src="" alt="SKU Image" class="rounded-lg w-full aspect-square object-cover">
+                        <p class="text-xs text-center text-gray-500 mt-1">SKU Image</p>
+                    </div>
                     <div>
                         <div id="modal-compartment-view" class="bg-gray-100 rounded-lg aspect-square flex items-center justify-center p-4">
                             <!-- Compartment visualization will be injected here -->
                         </div>
                         <p class="text-xs text-center text-gray-500 mt-1">Selected Bin/Compartment</p>
-                    </div>
-                    <div>
-                        <img id="modal-sku-image" src="" alt="SKU Image" class="rounded-lg w-full aspect-square object-cover">
-                        <p class="text-xs text-center text-gray-500 mt-1">SKU Image</p>
                     </div>
                 </div>
 
