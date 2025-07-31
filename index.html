@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Order Carte+ Pickup UI</title>
+    <title>Multi-Order Warehouse Pickup UI</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Inter -->
@@ -183,7 +183,7 @@
                     </div>
                     <div class="flex items-center space-x-4">
                         <div class="text-right text-xs text-primary-dark">
-                            <div>01:32 PM Thu 2025</div>
+                            <div>01:40 PM Thu 2025</div>
                             <div>John Doe</div>
                         </div>
                         <a href="#" class="cursor-pointer">
@@ -374,9 +374,11 @@
 
                 if (selectedItem) {
                     const orderId = selectedItem.dataset.orderId;
-                    const colorClass = orderData[orderId].colorClass;
-                    binLocation.classList.remove('border-waiting');
-                    binLocation.classList.add(`border-selected-${colorClass.split('-')[1]}`);
+                    const colorClass = orderData[orderId]?.colorClass;
+                    if (colorClass) {
+                        binLocation.classList.remove('border-waiting');
+                        binLocation.classList.add(`border-selected-${colorClass.split('-')[1]}`);
+                    }
                 } else if (compartments.length > 0 && compartments.length === finishedItems.length) {
                     binLocation.classList.remove('border-waiting');
                     binLocation.classList.add('border-finished');
@@ -593,11 +595,15 @@
                 currentSelectedItem.classList.add('item-finished');
                 currentSelectedItem.innerHTML = getIconSvg();
                 
-                orderData[orderId].picked++;
-                
-                const order = orderData[orderId];
-                if (order.items > 0 && order.picked === order.items) {
-                    setTimeout(() => showAnimation('completion-animation', `Order ${orderId} Complete!`), 100);
+                if (orderData[orderId]) {
+                    orderData[orderId].picked++;
+                    const order = orderData[orderId];
+                    // Check for completion
+                    if (order.items > 0 && order.picked === order.items) {
+                        setTimeout(() => showAnimation('completion-animation', `Order ${orderId} Complete!`), 100);
+                        // Remove the completed order from the active data
+                        delete orderData[orderId]; 
+                    }
                 }
                 
                 const parentBin = currentSelectedItem.closest('.bin-location');
@@ -614,10 +620,23 @@
                 binsGrid.innerHTML = '';
                 let hasSetInitialSelected = false;
                 
+                // Reset item counts
                 Object.keys(orderData).forEach(id => {
                     orderData[id].items = 0;
                     orderData[id].picked = 0;
                 });
+                
+                // Recalculate item counts based on current bins
+                binData.forEach(data => {
+                    if (data.items) {
+                        data.items.forEach(item => {
+                            if (orderData[item.orderId]) {
+                                orderData[item.orderId].items++;
+                            }
+                        });
+                    }
+                });
+
 
                 binData.forEach(data => {
                     const binWrapper = document.createElement('div');
@@ -634,9 +653,8 @@
                         let compartmentsHtml = '';
                         for (let i = 0; i < compartmentCount; i++) {
                             const itemData = data.items.find(item => item.compartment === i);
-                            if (itemData) {
+                            if (itemData && orderData[itemData.orderId]) { // Ensure order exists
                                 const order = orderData[itemData.orderId];
-                                order.items++;
 
                                 let stateClass = 'item-waiting';
                                 if (itemData.initialState === 'selected' && !hasSetInitialSelected) {
