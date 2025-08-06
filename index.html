@@ -221,13 +221,12 @@
 
     <!-- Modal Dialog -->
     <div id="pickup-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-        <!-- MODAL: Increased max-width for a more spacious layout -->
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-6xl">
-            <!-- MODAL: Changed to a flexbox layout for three columns -->
             <div class="p-8 flex justify-between items-stretch gap-8">
 
                 <!-- ===== LEFT CLUSTER ===== -->
-                <div class="flex flex-col justify-between space-y-6 w-80">
+                <div class="flex flex-col space-y-6 w-80">
+                    <h2 class="text-2xl font-bold text-center text-primary-darkest">Pick</h2>
                     <!-- Item Info -->
                     <div>
                         <h3 id="modal-item-name" class="text-3xl font-bold text-gray-800"></h3>
@@ -239,7 +238,15 @@
                         <p class="text-sm text-gray-500">SKU ID: <span id="modal-sku-id"></span></p>
                     </div>
                     
-                    <!-- Quantity Picker -->
+                    <!-- Selected Bin -->
+                    <div class="flex-grow flex flex-col">
+                        <div id="modal-compartment-view" class="bg-gray-100 rounded-lg aspect-square flex items-center justify-center p-2 border-2 border-blue-500">
+                            <!-- Compartment visualization will be injected here -->
+                        </div>
+                        <p class="text-xs text-center text-gray-500 mt-2">Selected Bin/Compartment</p>
+                    </div>
+
+                    <!-- Quantity Picker (Moved to bottom) -->
                     <div id="modal-qty-container" class="border-2 rounded-lg p-4 text-center">
                         <p class="text-sm font-medium uppercase">Pickup Quantity</p>
                         <div class="flex items-center justify-center space-x-4 mt-2">
@@ -247,14 +254,6 @@
                             <p id="modal-quantity-counter" class="text-4xl font-bold w-28"></p>
                             <button id="modal-plus-btn" class="rounded-full w-10 h-10 flex items-center justify-center text-2xl font-bold">+</button>
                         </div>
-                    </div>
-
-                    <!-- Selected Bin -->
-                    <div class="flex-grow flex flex-col">
-                        <div id="modal-compartment-view" class="bg-gray-100 rounded-lg aspect-square flex items-center justify-center p-2 border-2 border-blue-500">
-                            <!-- Compartment visualization will be injected here -->
-                        </div>
-                        <p class="text-xs text-center text-gray-500 mt-2">Selected Bin/Compartment</p>
                     </div>
                 </div>
 
@@ -274,13 +273,8 @@
                 </div>
 
                 <!-- ===== RIGHT CLUSTER ===== -->
-                <div class="flex flex-col justify-between space-y-6 w-80">
-                    <!-- Action Buttons -->
-                    <div class="space-y-3">
-                         <button id="modal-flag-btn" class="w-full text-center py-4 px-4 bg-red-100 text-red-700 font-semibold rounded-lg hover:bg-red-200 text-lg">Flag SKU</button>
-                         <button id="modal-done-btn" class="w-full text-center py-4 px-4 bg-gray-400 text-white font-semibold rounded-lg text-lg" disabled>Done</button>
-                    </div>
-
+                <div class="flex flex-col space-y-6 w-80">
+                    <h2 class="text-2xl font-bold text-center text-primary-darkest">Put</h2>
                     <!-- Tote Map -->
                     <div id="tote-map-container" class="flex-grow flex flex-col">
                         <div class="flex-grow flex items-center justify-center">
@@ -294,6 +288,12 @@
                                 <p class="text-sm font-medium text-center mt-2">Put Wall Location</p>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Action Buttons (Moved to bottom) -->
+                    <div class="space-y-3">
+                         <button id="modal-flag-btn" class="w-full text-center py-4 px-4 bg-red-100 text-red-700 font-semibold rounded-lg hover:bg-red-200 text-lg">Flag SKU</button>
+                         <button id="modal-done-btn" class="w-full text-center py-4 px-4 bg-gray-400 text-white font-semibold rounded-lg text-lg" disabled>Done</button>
                     </div>
                 </div>
 
