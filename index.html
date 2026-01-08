@@ -1,39 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Order Warehouse Pickup UI</title>
+    <title>Tote Inwarding UI</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
     <style>
-        /* Define custom color variables */
         :root {
             --bg-main: #F0EFE9;
             --primary-dark: #003C3C;
             --primary-darkest: #0D2021;
-            
-            /* State Colors */
-            --color-waiting-bg: #D1D5DB;     /* Grey */
-            --color-waiting-border: #6B7280;  /* Darker Grey */
-            --color-selected-bg: #3B82F6;     /* Blue */
-            --color-selected-border: #1D4ED8; /* Darker Blue */
-            --color-finished-bg: #01DC82;     /* Green */
-            --color-finished-border: #003C3C; /* Dark Teal */
-            --color-inactive-bg: #e5e7eb;
-
-            /* Order-specific Colors */
-            --order-1-bg: #FEF3C7; /* Amber 100 */
-            --order-1-border: #FBBF24; /* Amber 400 */
-            --order-2-bg: #DBEAFE; /* Blue 200 */
-            --order-2-border: #60A5FA; /* Blue 400 */
-            --order-3-bg: #FCE7F3; /* Pink 100 */
-            --order-3-border: #F472B6; /* Pink 400 */
+            --color-waiting-bg: #FFFFFF;
+            --color-waiting-border: #6B7280;
+            --color-filled-bg: #D1FAE5;
+            --color-filled-border: #065F46;
+            --color-disabled-bg: #E5E7EB;
+            --color-disabled-border: #9CA3AF;
         }
 
         body {
@@ -41,130 +29,195 @@
             background-color: var(--bg-main);
             color: var(--primary-darkest);
         }
-        
-        /* --- Compartment Item States --- */
-        .selectable-item { 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
+
+        /* --- Navigation --- */
+        .nav-link {
+            color: var(--primary-dark);
+        }
+
+        .nav-link:hover {
+            color: var(--primary-darkest);
+            background-color: #e5e7eb;
+        }
+
+        .nav-link-active {
+            background-color: var(--primary-dark);
+            color: white;
+        }
+
+        /* --- Inwarding Slot States --- */
+        .inwarding-slot {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .slot-empty {
+            background-color: var(--color-waiting-bg);
+            border: 2px dashed var(--color-waiting-border);
+            cursor: pointer;
+        }
+
+        .slot-empty:hover {
+            transform: scale(1.03);
+            border-color: var(--primary-dark);
+        }
+
+        /* Processing State (Amber Hourglass) */
+        .slot-processing {
+            background-color: #FFFBEB; /* Amber 50 */
+            border: 2px solid #F59E0B; /* Amber 500 */
+            cursor: not-allowed;
+        }
+
+        /* Completed State (Green Check) */
+        .slot-completed {
+            background-color: #ECFDF5; /* Emerald 50 */
+            border: 2px solid #10B981; /* Emerald 500 */
+            cursor: not-allowed;
+        }
+
+        /* --- Modal Panes --- */
+        #inwarding-modal-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 24px;
+        }
+
+        .modal-pane {
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            background-color: #F9FAFB;
+            border-radius: 12px;
+            border: 1px solid #E5E7EB;
+        }
+
+        /* Left Pane: Form */
+        .partition-form-group {
+            background-color: white;
+            border-radius: 8px;
+            border: 1px solid #D1D5DB;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .partition-form-group label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #6B7280;
+            margin-bottom: 4px;
+        }
+
+        .partition-form-group input {
+            width: 100%;
+            border-radius: 6px;
+            border: 1px solid #D1D5DB;
+            padding: 8px 10px;
+            font-size: 0.875rem;
+        }
+
+        .partition-form-group input:focus {
+            outline: none;
+            border-color: var(--primary-dark);
+            box-shadow: 0 0 0 2px rgba(0, 60, 60, 0.2);
+        }
+
+
+        /* Center Pane: Visualization */
+        .tote-vis-container {
+            width: 100%;
+            max-width: 280px;
+            aspect-ratio: 2 / 3;
+            border: 4px solid var(--primary-darkest);
+            border-radius: 8px;
+            margin: auto;
+            display: grid;
+            background-color: #E5E7EB;
+            grid-template-columns: 1fr; /* Always 1 partition now */
+        }
+
+        .tote-vis-partition {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+
+        /* Right Pane: Action */
+        .placement-animation-container {
+            height: 200px;
+            background: linear-gradient(to top, #D1D5DB 30%, transparent 30%);
+            border: 2px solid #9CA3AF;
+            border-radius: 8px;
+            margin-top: auto;
+            margin-bottom: auto;
             position: relative;
             overflow: hidden;
         }
-        .item-inactive { background-color: var(--color-inactive-bg); }
-        
-        .item-waiting { 
-            border: 2px dashed var(--color-waiting-border) !important; 
-        }
-        .item-selected { 
-            border: 4px solid var(--color-selected-border) !important; 
-            transform: scale(1.05);
-            z-index: 10;
-        }
-        .item-finished { 
-            background-color: var(--color-finished-bg) !important; 
-            border: 2px solid var(--color-finished-border) !important; 
-        }
 
-        /* --- Order Color Styling --- */
-        .order-1 { background-color: var(--order-1-bg); }
-        .order-2 { background-color: var(--order-2-bg); }
-        .order-3 { background-color: var(--order-3-bg); }
-
-        .order-1.item-selected { border-color: var(--order-1-border); }
-        .order-2.item-selected { border-color: var(--order-2-border); }
-        .order-3.item-selected { border-color: var(--order-3-border); }
-
-
-        /* Icon Visibility */
-        .selectable-item .icon { display: none; width: 40%; height: 40%; }
-        .item-finished .icon-finished { display: block; color: var(--primary-dark); }
-
-        /* --- Bin Location Border States --- */
-        .bin-location { border-width: 2px; transition: border-color 0.3s; }
-        .border-waiting { border-color: #D1D5DB; }
-        .border-selected-order-1 { border-color: var(--order-1-border) !important; }
-        .border-selected-order-2 { border-color: var(--order-2-border) !important; }
-        .border-selected-order-3 { border-color: var(--order-3-border) !important; }
-        .border-finished { border-color: #01DC82; }
-
-        /* General Styles */
-        .nav-link { color: var(--primary-dark); }
-        .nav-link:hover { color: var(--primary-darkest); background-color: #e5e7eb; }
-        .nav-link-active { background-color: var(--primary-dark); color: white; }
-
-        /* Modal Styles */
-        #pickup-modal .disabled-button {
-            background-color: #9CA3AF;
-            cursor: not-allowed;
-        }
-
-        /* --- Order Legend --- */
-        .order-legend-item {
+        .placement-animation-tote {
+            width: 60%;
+            height: 40%;
+            background-color: var(--primary-dark);
+            border: 3px solid var(--primary-darkest);
+            border-radius: 8px;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: place-tote 3s ease-in-out infinite;
             display: flex;
             align-items: center;
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 1px solid transparent;
-            transition: all 0.2s ease-in-out;
-        }
-        .order-color-dot {
-            width: 24px;
-            height: 24px;
-            margin-right: 12px;
-            border: 3px solid rgba(0,0,0,0.2);
-            border-radius: 0.25rem; /* Changed from 50% to make it a square with slightly rounded corners */
+            justify-content: center;
+            color: white;
+            font-weight: 600;
         }
 
-        /* --- Tote Map Styles --- */
-        .order-tote {
-            transition: all 0.2s ease-in-out;
-            cursor: pointer;
-            padding: 4px;
-            font-size: 0.8rem;
-            line-height: 1.2;
-        }
-
-        .tote-highlight {
-            animation: pulse-border 1.5s infinite;
-            font-weight: 700 !important;
-            color: var(--primary-darkest) !important;
-            border-color: transparent !important;
-        }
-
-        .tote-selected {
-            transform: scale(1.05);
-            background-color: var(--color-finished-bg) !important;
-            border-color: var(--color-finished-border) !important;
-            color: var(--primary-darkest) !important;
-            animation: none; /* Stop pulsing when selected */
+        @keyframes place-tote {
+            0% { top: -50%; }
+            30% { top: 55%; }
+            40% { top: 50%; }
+            60% { top: 50%; }
+            90% { top: -50%; }
+            100% { top: -50%; }
         }
         
-        .tote-empty {
-            background-color: #F3F4F6;
-            color: #9CA3AF;
+        .btn-disabled {
+            background-color: #9CA3AF !important;
             cursor: not-allowed;
         }
 
-        @keyframes pulse-border {
-            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        /* Reset direction for text inside slots since the container is RTL */
+        .slot-text {
+            direction: ltr;
         }
 
-        /* --- Animations --- */
-        .animation-popup.show {
-            display: flex;
-            animation: fade-in-out 2.5s ease-in-out forwards;
+        .slot-group-container {
+            border: 2px dashed #D1D5DB;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 1.25rem;
+            padding: 1.25rem;
+            display: grid;
+            /* Maintaining 6 columns */
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            /* Increased gap for visual separation */
+            gap: 1.5rem;
+            /* Added max-width and margin auto to prevent excessive stretching */
+            width: 100%;
+            max-width: 800px;
         }
 
-        @keyframes fade-in-out {
-            0% { opacity: 0; transform: scale(0.8); }
-            20% { opacity: 1; transform: scale(1); }
-            80% { opacity: 1; transform: scale(1); }
-            100% { opacity: 0; transform: scale(0.8); }
+        /* Desktop specific sizing for larger slots */
+        @media (min-width: 1280px) {
+            .inwarding-slot {
+                min-height: 200px; /* Slightly reduced to keep everything in view */
+            }
         }
     </style>
 </head>
+
 <body class="antialiased">
 
     <div id="root" class="flex flex-col h-screen">
@@ -173,10 +226,11 @@
             <div class="container mx-auto px-4">
                 <div class="flex items-center justify-between h-16">
                     <div class="flex items-center space-x-8">
-                        <img src="https://placehold.co/150x40/003C3C/FFFFFF?text=Cartesian+Kinetics" alt="Cartesian Kinetics Logo" class="h-10">
+                        <img src="https://placehold.co/150x40/003C3C/FFFFFF?text=Cartesian+Kinetics"
+                            alt="Cartesian Kinetics Logo" class="h-10">
                         <nav class="hidden md:flex items-center space-x-1">
-                            <a href="#" class="px-3 py-2 text-sm font-semibold rounded-md nav-link-active">Order Fulfillment</a>
-                            <a href="#" class="px-3 py-2 text-sm font-medium rounded-md nav-link">Inbounds</a>
+                            <a href="#" class="px-3 py-2 text-sm font-medium rounded-md nav-link">Order Fulfillment</a>
+                            <a href="#" class="px-3 py-2 text-sm font-semibold rounded-md nav-link-active">Inbounds</a>
                             <a href="#" class="px-3 py-2 text-sm font-medium rounded-md nav-link">Replenishment</a>
                             <a href="#" class="px-3 py-2 text-sm font-medium rounded-md nav-link">Cycle Count</a>
                         </nav>
@@ -187,142 +241,136 @@
                             <div>John Doe</div>
                         </div>
                         <a href="#" class="cursor-pointer">
-                            <img src="https://placehold.co/40x40/EFEFEF/333333?text=JD" alt="User Avatar" class="w-10 h-10 rounded-full"
-                            onerror="this.onerror=null;this.src='https://placehold.co/40x40/EFEFEF/333333?text=JD';">
+                            <img src="https://placehold.co/40x40/EFEFEF/333333?text=JD" alt="User Avatar"
+                                class="w-10 h-10 rounded-full"
+                                onerror="this.onerror=null;this.src='https://placehold.co/40x40/EFEFEF/333333?text=JD';">
                         </a>
-                    </div>
-                </div>
-            </div>
-             <!-- Active Orders Bar -->
-            <div class="bg-gray-50 border-t border-gray-200">
-                <div class="container mx-auto px-4 py-3">
-                    <h3 class="text-xs font-bold uppercase text-gray-500 mb-2">Active Orders</h3>
-                    <div id="order-legend" class="flex items-center space-x-4">
-                        <!-- Order legend will be dynamically populated -->
                     </div>
                 </div>
             </div>
         </header>
 
-        <!-- Main Content -->
-        <main class="flex-grow p-4 md:p-6">
-            <div class="container mx-auto">
-                <h2 class="text-lg font-semibold text-primary-darkest mb-4">Pickup Items</h2>
-                <div id="bins-grid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-12 gap-4">
-                    <!-- Bins will be dynamically populated by the script -->
+        <!-- Main Content Area -->
+        <main class="flex-grow p-4 md:p-6 overflow-y-auto">
+            
+            <!-- Grid View (Default View) -->
+            <div id="grid-view" class="container mx-auto">
+                <div class="flex flex-col md:flex-row md:justify-between md:items-end mb-6 gap-4">
+                    <h2 class="text-lg font-semibold text-primary-darkest">Select Slot for Tote Inwarding</h2>
+                    <div class="bg-white px-5 py-3 rounded-xl border border-gray-200 shadow-sm text-sm font-medium text-gray-600 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-primary-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        Number of available storage locations: <span id="storage-count" class="font-bold text-primary-dark text-lg ml-2">48</span>
+                    </div>
                 </div>
-                 <!-- Done Button -->
-                <div class="mt-8 flex justify-end">
-                    <button id="main-done-btn" class="px-8 py-3 bg-gray-400 text-white font-semibold rounded-lg cursor-not-allowed" disabled>Done</button>
+
+                <!-- Grouped View with dir="rtl" - Maintain single row on large screens -->
+                <div id="inwarding-slots-grid"
+                    dir="rtl"
+                    class="flex flex-col lg:flex-row gap-8 items-center justify-center w-full">
+                    <!-- Right Group (Slots 1-6) and Left Group (Slots 8-13) will be dynamically populated -->
                 </div>
             </div>
+
         </main>
     </div>
 
-    <!-- Modal Dialog -->
-    <div id="pickup-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-6xl">
-            <div class="p-8 flex justify-between items-stretch gap-8">
+    <!-- Bin Details Modal Dialog -->
+    <div id="inwarding-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-7xl p-8 relative">
+            <!-- Main 3-Pane Content -->
+            <div id="inwarding-modal-content">
 
-                <!-- ===== LEFT CLUSTER ===== -->
-                <div class="flex flex-col space-y-6 w-80">
-                    <h2 class="text-2xl font-bold text-center text-primary-darkest">Pick</h2>
-                    <!-- Item Info -->
-                    <div>
-                        <h3 id="modal-item-name" class="text-3xl font-bold text-gray-800"></h3>
-                        <p class="text-sm text-gray-500 font-semibold mt-2">Partition: <span id="modal-partition-number"></span></p>
-                        <p class="text-sm text-gray-500 flex items-center">Order ID: 
-                            <span id="modal-order-dot" class="inline-block w-4 h-4 rounded-sm mx-2"></span>
-                            <span id="modal-order-id"></span>
-                        </p>
-                        <p class="text-sm text-gray-500">SKU ID: <span id="modal-sku-id"></span></p>
-                    </div>
-                    
-                    <!-- Selected Bin -->
-                    <div class="flex-grow flex flex-col">
-                        <div id="modal-compartment-view" class="bg-gray-100 rounded-lg aspect-square flex items-center justify-center p-2 border-2 border-blue-500">
-                            <!-- Compartment visualization will be injected here -->
+                <!-- ===== LEFT PANE: DATA ENTRY ===== -->
+                <div class="modal-pane">
+                    <h2 class="text-xl font-bold text-center text-primary-darkest mb-4">Tote Details</h2>
+                    <div class="flex-grow overflow-y-auto pr-2">
+                        <!-- Shared Tote ID -->
+                        <div class="partition-form-group bg-gray-100">
+                            <label for="tote-id">Tote ID</label>
+                            <input type="text" id="tote-id" name="tote-id" placeholder="Scan or enter Tote ID" class="modal-input">
                         </div>
-                        <p class="text-xs text-center text-gray-500 mt-2">Selected Bin/Compartment</p>
-                    </div>
-
-                    <!-- Quantity Picker (Moved to bottom) -->
-                    <div id="modal-qty-container" class="border-2 rounded-lg p-4 text-center">
-                        <p class="text-sm font-medium uppercase">Pickup Quantity</p>
-                        <div class="flex items-center justify-center space-x-4 mt-2">
-                            <button id="modal-minus-btn" class="rounded-full w-10 h-10 flex items-center justify-center text-2xl font-bold">-</button>
-                            <p id="modal-quantity-counter" class="text-4xl font-bold w-28"></p>
-                            <button id="modal-plus-btn" class="rounded-full w-10 h-10 flex items-center justify-center text-2xl font-bold">+</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ===== CENTER CLUSTER ===== -->
-                <div class="flex flex-col items-center justify-center flex-grow">
-                    <!-- SKU Image -->
-                    <div class="w-full max-w-sm">
-                        <img id="modal-sku-image" src="" alt="SKU Image" class="rounded-lg w-full aspect-square object-cover bg-gray-200">
-                        <p class="text-xs text-center text-gray-500 mt-2">SKU Image</p>
-                    </div>
-                    <!-- Arrow -->
-                    <div class="flex-grow flex items-center">
-                        <svg class="w-32 h-32 text-primary-dark" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-                        </svg>
-                    </div>
-                </div>
-
-                <!-- ===== RIGHT CLUSTER ===== -->
-                <div class="flex flex-col space-y-6 w-80">
-                    <h2 class="text-2xl font-bold text-center text-primary-darkest">Put</h2>
-                    <!-- Tote Map -->
-                    <div id="tote-map-container" class="flex-grow flex flex-col">
-                        <div class="flex-grow flex items-center justify-center">
-                            <div class="w-full">
-                                <div id="tote-map" class="grid grid-cols-2 grid-rows-2 gap-2 aspect-square w-full">
-                                    <div id="tote-1" class="order-tote border-2 border-gray-300 rounded-lg flex items-center justify-center font-bold text-center"></div>
-                                    <div id="tote-2" class="order-tote border-2 border-gray-300 rounded-lg flex items-center justify-center font-bold text-center"></div>
-                                    <div id="tote-3" class="order-tote border-2 border-gray-300 rounded-lg flex items-center justify-center font-bold text-center"></div>
-                                    <div id="tote-4" class="order-tote border-2 border-gray-300 rounded-lg flex items-center justify-center font-bold text-center"></div>
+                        <!-- Dynamic Partition Forms (Now Static 1 Partition) -->
+                        <div id="partition-forms-container">
+                            <div class="partition-form-group">
+                                <p class="font-semibold text-sm text-primary-darkest mb-3 hidden">Partition 1</p>
+                                <div>
+                                    <label for="sku-id-0">SKU ID</label>
+                                    <input type="text" id="sku-id-0" name="sku-id-0" placeholder="Scan or enter SKU" class="modal-input">
                                 </div>
-                                <p class="text-sm font-medium text-center mt-2">Put Wall Location</p>
+                                <div class="mt-2">
+                                    <label for="unit-count-0">Unit Count</label>
+                                    <input type="number" id="unit-count-0" name="unit-count-0" placeholder="Enter quantity" min="1" class="modal-input">
+                                </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Action Buttons (Moved to bottom) -->
-                    <div class="space-y-3">
-                         <button id="modal-flag-btn" class="w-full text-center py-4 px-4 bg-red-100 text-red-700 font-semibold rounded-lg hover:bg-red-200 text-lg">Flag SKU</button>
-                         <button id="modal-done-btn" class="w-full text-center py-4 px-4 bg-gray-400 text-white font-semibold rounded-lg text-lg" disabled>Done</button>
+                <!-- ===== CENTER PANE: VISUALIZATION ===== -->
+                <div class="modal-pane">
+                    <h2 class="text-xl font-bold text-center text-primary-darkest mb-4">Tote Configuration</h2>
+                    <div id="tote-visualization-container" class="flex-grow flex items-center justify-center">
+                         <div class="tote-vis-container tote-vis-1">
+                        </div>
+                    </div>
+                    <p class="text-sm font-semibold text-center text-gray-500 mt-2">
+                        Slot: <span id="modal-slot-id" class="font-bold text-primary-darkest"></span>
+                    </p>
+                </div>
+
+                <!-- ===== RIGHT PANE: ACTION ===== -->
+                <div class="modal-pane">
+                    <h2 class="text-xl font-bold text-center text-primary-darkest mb-4">Confirm Placement</h2>
+                    <!-- Placement Animation -->
+                    <div class="placement-animation-container">
+                        <div class="placement-animation-tote">TOTE</div>
+                    </div>
+                    <p class="text-sm font-semibold text-center text-gray-500 my-4">
+                        Place tote into the highlighted slot.
+                    </p>
+                    <!-- Action Buttons -->
+                    <div class="space-y-3 mt-auto">
+                        <button id="modal-done-btn" disabled
+                            class="w-full text-center py-4 px-4 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 text-lg btn-disabled">Done</button>
+                        <p class="text-xs text-center text-red-700 font-medium">
+                            Acknowledge only after ensuring the tote is placed.
+                        </p>
                     </div>
                 </div>
 
             </div>
+            <!-- Close button in corner -->
+            <button onclick="closeInwardingModal()"
+                class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
         </div>
-    </div>
-
-    <!-- Animation Containers -->
-    <div id="completion-animation" class="hidden fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-[100] animation-popup">
-        <div id="completion-text" class="text-white text-5xl font-bold p-12 bg-green-500 rounded-2xl shadow-2xl transform"></div>
-    </div>
-    <div id="new-order-animation" class="hidden fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-[100] animation-popup">
-        <div class="text-white text-5xl font-bold p-12 bg-yellow-400 rounded-2xl shadow-2xl transform">New order set</div>
     </div>
 
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const binsGrid = document.getElementById('bins-grid');
-            const modal = document.getElementById('pickup-modal');
-            const orderLegend = document.getElementById('order-legend');
-            const mainDoneBtn = document.getElementById('main-done-btn');
+            // DOM Elements
+            const slotsGrid = document.getElementById('inwarding-slots-grid');
+            const modal = document.getElementById('inwarding-modal');
             const dateTimeElement = document.getElementById('date-time');
-            let currentSelectedItem = null;
+            const modalDoneBtn = document.getElementById('modal-done-btn');
             
-            let orderData = {};
-            let binData = [];
-            // This will hold the static mapping of totes for the current wave
-            let waveToteMapping = {};
+            // Modal Inputs for Validation
+            const inputToteId = document.getElementById('tote-id');
+            const inputSkuId = document.getElementById('sku-id-0');
+            const inputUnitCount = document.getElementById('unit-count-0');
+            const storageCountDisplay = document.getElementById('storage-count');
+
+            // --- State --- //
+            let slotData = {};
+            let currentSlotId = null;
+            let availableStorageCount = 48;
 
             // --- DATE & TIME --- //
             function updateDateTime() {
@@ -330,465 +378,145 @@
                 const options = { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: true };
                 const timeString = now.toLocaleTimeString('en-US', options).replace(' ', '');
                 const yearString = now.getFullYear();
-                dateTimeElement.textContent = `${timeString} ${now.toLocaleDateString('en-US', {weekday:'short'})} ${yearString}`;
+                dateTimeElement.textContent = `${timeString} ${now.toLocaleDateString('en-US', { weekday: 'short' })} ${yearString}`;
             }
 
-            // --- DATA GENERATION --- //
-            function generateInitialData() {
-                waveToteMapping = {
-                    1: "ORD-A1B2",
-                    2: "ORD-C3D4",
-                    3: "ORD-E5F6",
-                    4: null
-                };
-                orderData = {
-                    "ORD-A1B2": { colorClass: 'order-1', name: "Order A1B2", items: 0, picked: 0, toteId: 1, completed: false },
-                    "ORD-C3D4": { colorClass: 'order-2', name: "Order C3D4", items: 0, picked: 0, toteId: 2, completed: false },
-                    "ORD-E5F6": { colorClass: 'order-3', name: "Order E5F6", items: 0, picked: 0, toteId: 3, completed: false },
-                };
-                binData = [
-                    { id: '1.1.1.', type: 'empty' }, { id: '2.1.1.', type: '2-compartment', items: [{ compartment: 0, orderId: "ORD-A1B2" }] }, { id: '3.1.1.', type: '1-compartment', items: [{ compartment: 0, orderId: "ORD-C3D4" }] }, { id: '4.1.1.', type: '4-compartment', items: [ { compartment: 0, orderId: "ORD-A1B2" }, { compartment: 1, orderId: "ORD-C3D4" }, { compartment: 2, orderId: "ORD-E5F6" }, { compartment: 3, orderId: "ORD-A1B2" } ] }, { id: '5.1.1.', type: '1-compartment', items: [{ compartment: 0, orderId: "ORD-E5F6", initialState: 'selected' }] }, { id: '6.1.1.', type: 'empty' }, { id: '7.1.1.', type: '2-compartment', items: [ { compartment: 0, orderId: "ORD-C3D4" }, { compartment: 1, orderId: "ORD-E5F6" } ] }, { id: '8.1.1.', type: 'empty' }, { id: '9.1.1.', type: '1-compartment', items: [{ compartment: 0, orderId: "ORD-A1B2", initialState: 'finished' }] }, { id: '10.1.1.', type: 'empty' }, { id: '11.1.1.', type: '4-compartment', items: [ { compartment: 1, orderId: "ORD-C3D4" }, { compartment: 2, orderId: "ORD-E5F6" } ] }, { id: '12.1.1.', type: 'empty' },
-                ];
-            }
-            
-            function generateNewWave() {
-                // 1. Generate new random orders and assign them to static tote locations
-                orderData = {};
-                waveToteMapping = {}; // Reset static mapping
-                const newOrderColors = ['order-1', 'order-2', 'order-3'];
-                const toteAssignments = [1, 2, 3]; 
+            // --- HELPER TO CREATE SLOTS --- //
+            function createSlotElement(i) {
+                const slotId = `${i}.1.1.`;
+                let slotState = slotData[slotId] ? slotData[slotId] : { status: 'empty' };
+                slotData[slotId] = slotState;
 
-                for (let i = 0; i < 3; i++) {
-                    const randomId = `ORD-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-                    const assignedTote = toteAssignments[i];
-                    orderData[randomId] = { 
-                        colorClass: newOrderColors[i], 
-                        name: `Order ${randomId}`, 
-                        items: 0, 
-                        picked: 0,
-                        toteId: assignedTote,
-                        completed: false
-                    };
-                    // Populate the static mapping for the new wave
-                    waveToteMapping[assignedTote] = randomId;
-                }
-                waveToteMapping[4] = null; // Ensure tote 4 is explicitly empty
+                const slotWrapper = document.createElement('div');
+                slotWrapper.id = `slot-${slotId}`;
+                slotWrapper.className = `inwarding-slot rounded-lg p-3 flex flex-col aspect-[2/4] slot-${slotState.status}`;
+                slotWrapper.dataset.slotId = slotId;
 
-                // 2. Generate new random bin configurations
-                binData = [];
-                const binTypes = ['1-compartment', '2-compartment', '4-compartment', 'empty'];
-                for (let i = 1; i <= 12; i++) {
-                    const binLocationId = `${i}.1.1.`;
-                    const randomType = binTypes[Math.floor(Math.random() * binTypes.length)];
-                    const newBin = { id: binLocationId, type: randomType, items: [] };
-
-                    if (randomType !== 'empty') {
-                        let compartmentCount = 0;
-                        if (randomType === '1-compartment') compartmentCount = 1;
-                        if (randomType === '2-compartment') compartmentCount = 2;
-                        if (randomType === '4-compartment') compartmentCount = 4;
-
-                        for (let j = 0; j < compartmentCount; j++) {
-                            // 50% chance to place an item in a compartment
-                            if (Math.random() > 0.5) {
-                                const newOrderIds = Object.keys(orderData);
-                                const randomOrderId = newOrderIds[Math.floor(Math.random() * newOrderIds.length)];
-                                newBin.items.push({ compartment: j, orderId: randomOrderId });
-                            }
-                        }
-                    }
-                    binData.push(newBin);
-                }
-                
-                // 3. Re-initialize the app with new data
-                initializeApp();
-            }
-            
-            // --- UI UPDATE FUNCTIONS --- //
-            function getIconSvg() {
-                return `<svg class="icon icon-finished" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-            }
-
-            function updateBinState(binLocation) {
-                if (!binLocation) return;
-                const compartments = binLocation.querySelectorAll('.selectable-item');
-                const selectedItem = binLocation.querySelector('.item-selected');
-                const finishedItems = binLocation.querySelectorAll('.item-finished');
-                
-                binLocation.className = binLocation.className.replace(/border-selected-order-\d/g, '').trim();
-                binLocation.classList.remove('border-finished');
-                binLocation.classList.add('border-waiting');
-
-                if (selectedItem) {
-                    const orderId = selectedItem.dataset.orderId;
-                    const colorClass = orderData[orderId]?.colorClass;
-                    if (colorClass) {
-                        binLocation.classList.remove('border-waiting');
-                        binLocation.classList.add(`border-selected-${colorClass.split('-')[1]}`);
-                    }
-                } else if (compartments.length > 0 && compartments.length === finishedItems.length) {
-                    binLocation.classList.remove('border-waiting');
-                    binLocation.classList.add('border-finished');
-                }
-            }
-            
-            function updateOrderLegend() {
-                orderLegend.innerHTML = '';
-                Object.values(orderData)
-                    .filter(order => !order.completed)
-                    .forEach(order => {
-                        const legendItem = document.createElement('div');
-                        const isComplete = order.items > 0 && order.picked === order.items;
-                        
-                        legendItem.className = 'order-legend-item';
-                        legendItem.innerHTML = `
-                            <div class="order-color-dot ${order.colorClass}"></div>
-                            <div>
-                                <div class="font-semibold text-sm text-primary-darkest">${order.name}</div>
-                                <div class="text-xs text-gray-500">Lines: ${order.picked} of ${order.items}</div>
-                                ${isComplete ? `<div class="font-bold text-green-600 text-xs mt-1">COMPLETED</div>` : ''}
-                            </div>
-                        `;
-                        orderLegend.appendChild(legendItem);
-                    });
-            }
-
-            function checkAllTasksFinished() {
-                const allSelectableItems = document.querySelectorAll('.selectable-item');
-                const allFinishedItems = document.querySelectorAll('.item-finished');
-                
-                if (allSelectableItems.length > 0 && allSelectableItems.length === allFinishedItems.length) {
-                    mainDoneBtn.disabled = false;
-                    mainDoneBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
-                    mainDoneBtn.classList.add('bg-green-500', 'hover:bg-green-600');
+                let innerHtml = '';
+                if (slotState.status === 'processing') {
+                    innerHtml = `
+                    <div class="flex-grow flex flex-col items-center justify-center text-center">
+                        <svg class="w-12 h-12 text-amber-500 animate-pulse" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M6 2v6h.01L6 8.01 10 12l-4 4 .01.01H6V22h12v-5.99h-.01L18 16l-4-4 4-3.99-.01-.01H18V2H6z"/>
+                        </svg>
+                    </div>`;
+                } else if (slotState.status === 'completed') {
+                    innerHtml = `
+                    <div class="flex-grow flex flex-col items-center justify-center text-center">
+                         <svg class="w-12 h-12 text-green-700" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M10 15.172l9.192-9.193 1.415 1.414L10 18l-6.364-6.364 1.414-1.414z"/>
+                        </svg>
+                    </div>`;
                 } else {
-                    mainDoneBtn.disabled = true;
-                    mainDoneBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
-                    mainDoneBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
+                    innerHtml = `<div class="flex-grow"></div>`;
                 }
-            }
-            
-            function showAnimation(type, text) {
-                const animationContainer = document.getElementById(type);
-                const animationText = animationContainer.querySelector('div');
-                
-                if(text) animationText.textContent = text;
-                animationContainer.classList.add('show');
-                animationContainer.classList.remove('hidden');
+                slotWrapper.innerHTML = innerHtml + `<p class="text-xs text-center text-primary-dark mt-2 slot-text font-medium">Slot:<br>${slotId}</p>`;
 
-                setTimeout(() => {
-                    animationContainer.classList.remove('show');
-                    animationContainer.classList.add('hidden');
-                }, 2400); 
+                if (slotState.status === 'empty') {
+                    slotWrapper.addEventListener('click', () => openInwardingModal(slotId));
+                }
+                return slotWrapper;
             }
 
-            // --- MODAL LOGIC --- //
-            function openPickupModal(item) {
-                currentSelectedItem = item;
-                const orderId = item.dataset.orderId;
-                const order = orderData[orderId];
-                
-                // --- Modal State Variables ---
-                let currentCount = 0;
-                let isToteSelected = false;
-                const pickupQty = Math.floor(Math.random() * 12) + 1;
-                const requiredToteId = order.toteId;
+            // --- GRID INITIALIZATION --- //
+            function initializeApp() {
+                slotsGrid.innerHTML = '';
 
-                // --- Get Modal DOM Elements ---
-                const doneBtn = document.getElementById('modal-done-btn');
-                const plusBtn = document.getElementById('modal-plus-btn');
-                const minusBtn = document.getElementById('modal-minus-btn');
-                const counterDisplay = document.getElementById('modal-quantity-counter');
-                const allTotes = document.querySelectorAll('.order-tote');
-
-                // --- Helper to update the modal's "Done" button state ---
-                const updateModalDoneButtonState = () => {
-                    const isQtyMet = currentCount === pickupQty;
-                    const isReady = isQtyMet && isToteSelected;
-                    
-                    doneBtn.disabled = !isReady;
-                    doneBtn.classList.toggle('disabled-button', !isReady);
-                    doneBtn.classList.toggle('bg-gray-400', !isReady);
-                    doneBtn.classList.toggle('bg-green-500', isReady);
-                    doneBtn.classList.toggle('hover:bg-green-600', isReady);
-                };
-
-                // --- Populate Modal with Item Info ---
-                const parentBin = item.closest('.bin-location');
-                const binGrid = parentBin.querySelector('.grid');
-                let partitionNumber = 'N/A';
-                if (binGrid) {
-                    const allCompartments = Array.from(binGrid.children);
-                    const totalCompartments = allCompartments.length;
-                    const selectedIndex = allCompartments.indexOf(item);
-                    if (totalCompartments === 1) partitionNumber = 1;
-                    if (totalCompartments === 2) partitionNumber = [2, 1][selectedIndex];
-                    else if (totalCompartments === 4) partitionNumber = [2, 1, 3, 4][selectedIndex]; // Restored original mapping
-                }
-                document.getElementById('modal-partition-number').textContent = partitionNumber;
-
-                const randomSkuNum = Math.floor(Math.random() * 100) + 1;
-                document.getElementById('modal-item-name').textContent = `Industrial Widget ${randomSkuNum}`;
-                document.getElementById('modal-sku-image').src = `https://placehold.co/400x400/cccccc/333333?text=SKU-${randomSkuNum}`;
-                document.getElementById('modal-order-id').textContent = orderId;
-                document.getElementById('modal-sku-id').textContent = `SKU-${Math.random().toString(36).slice(2, 11).toUpperCase()}`;
-                
-                const modalOrderDot = document.getElementById('modal-order-dot');
-                modalOrderDot.className = `inline-block w-4 h-4 rounded-sm mx-2 ${order.colorClass}`;
-                
-                // --- Style Quantity Counter ---
-                const qtyContainer = document.getElementById('modal-qty-container');
-                const orderColorVar = order.colorClass; // e.g., 'order-1'
-                qtyContainer.style.borderColor = `var(--${orderColorVar}-border)`;
-                qtyContainer.style.backgroundColor = `var(--${orderColorVar}-bg)`;
-                counterDisplay.style.color = `var(--primary-darkest)`;
-                plusBtn.style.backgroundColor = 'var(--primary-darkest)';
-                minusBtn.style.backgroundColor = 'var(--primary-darkest)';
-                plusBtn.style.color = 'white';
-                minusBtn.style.color = 'white';
-
-                // --- Render Compartment View ---
-                const compartmentView = document.getElementById('modal-compartment-view');
-                if (binGrid) {
-                    const binGridClone = binGrid.cloneNode(true);
-                    binGridClone.classList.add('h-full', 'w-full');
-                    const allOriginalItems = binGrid.children;
-                    const selectedIndex = Array.from(allOriginalItems).indexOf(item);
-                    
-                    Array.from(binGridClone.children).forEach((clone, index) => {
-                        const originalItem = allOriginalItems[index];
-                        // Base classes for a compartment in the modal view
-                        let newClasses = ['rounded-md'];
-
-                        if (originalItem.classList.contains('selectable-item')) {
-                            // Add the order-specific background color class
-                            newClasses.push(originalItem.dataset.orderColorClass);
-                        } else {
-                            // It's an inactive/empty compartment
-                            newClasses.push('item-inactive');
-                        }
-                        
-                        // Apply the base classes
-                        clone.className = newClasses.join(' ');
-
-                        // Add a prominent highlight to the *selected* compartment clone
-                        if (index === selectedIndex) {
-                            clone.classList.add('ring-4', 'ring-offset-2', 'ring-blue-500');
-                        }
-                    });
-
-                    // Clear previous content and append the new clone
-                    compartmentView.innerHTML = '';
-                    compartmentView.appendChild(binGridClone);
-                    // The container's style (bg-gray-100, border-blue-500) is set in the HTML and should not be changed here.
-                    // The incorrect lines that set the background and border color of the container have been removed.
+                // Create Right Group (Slots 1-6)
+                const rightGroup = document.createElement('div');
+                rightGroup.className = 'slot-group-container';
+                for (let i = 1; i <= 6; i++) {
+                    rightGroup.appendChild(createSlotElement(i));
                 }
 
-                // --- Setup Quantity Counter ---
-                const updateCounterDisplay = () => {
-                    counterDisplay.textContent = `${currentCount}/${pickupQty}`;
-                    updateModalDoneButtonState();
-                };
-                plusBtn.onclick = () => { if (currentCount < pickupQty) { currentCount++; updateCounterDisplay(); } };
-                minusBtn.onclick = () => { if (currentCount > 0) { currentCount--; updateCounterDisplay(); } };
+                // Create Left Group (Slots 8-13)
+                const leftGroup = document.createElement('div');
+                leftGroup.className = 'slot-group-container';
+                for (let i = 8; i <= 13; i++) {
+                    leftGroup.appendChild(createSlotElement(i));
+                }
+
+                // Append to grid (RTL will place rightGroup on the right)
+                slotsGrid.appendChild(rightGroup);
+                slotsGrid.appendChild(leftGroup);
+            }
+
+            // --- BIN DETAILS MODAL LOGIC --- //
+            function openInwardingModal(slotId) {
+                currentSlotId = slotId;
+                document.getElementById('modal-slot-id').textContent = slotId;
                 
-                // --- Setup Tote Map (using the static waveToteMapping) ---
-                allTotes.forEach(tote => {
-                    // Reset state from previous modal openings
-                    tote.className = 'order-tote border-2 border-gray-300 rounded-lg flex items-center justify-center font-bold text-center';
-                    tote.style.backgroundColor = '';
-                    tote.style.borderColor = '';
+                inputToteId.value = '';
+                inputSkuId.value = '';
+                inputUnitCount.value = '';
+                validateInputs();
 
-                    const toteId = parseInt(tote.id.split('-')[1]);
-                    // Get the orderId that was originally assigned to this tote for this wave
-                    const assignedOrderId = waveToteMapping[toteId];
-
-                    // Check if that order is still active (i.e., exists and is not marked as completed)
-                    if (assignedOrderId && orderData[assignedOrderId] && !orderData[assignedOrderId].completed) {
-                        const assignedOrderData = orderData[assignedOrderId];
-                        tote.textContent = assignedOrderId;
-                        tote.classList.add(assignedOrderData.colorClass);
-                        
-                        // Highlight the required tote for the current item
-                        if (toteId === requiredToteId) {
-                            tote.classList.add('tote-highlight');
-                        }
-                    } else {
-                        // The tote is either unassigned or its order was completed
-                        tote.textContent = 'Empty';
-                        tote.classList.add('tote-empty');
-                    }
-
-                    tote.onclick = () => {
-                        const clickAssignedOrderId = waveToteMapping[toteId];
-                        // Only allow clicking the correct, non-empty (active) tote
-                        if (toteId === requiredToteId && clickAssignedOrderId && orderData[clickAssignedOrderId] && !orderData[clickAssignedOrderId].completed) {
-                            // Deselect if clicking again
-                            if (tote.classList.contains('tote-selected')) {
-                                tote.classList.remove('tote-selected');
-                                tote.classList.add('tote-highlight');
-                                isToteSelected = false;
-                            } else {
-                                // Select this tote
-                                allTotes.forEach(t => t.classList.remove('tote-selected'));
-                                tote.classList.add('tote-selected');
-                                tote.classList.remove('tote-highlight');
-                                isToteSelected = true;
-                            }
-                            updateModalDoneButtonState();
-                        }
-                    };
-                });
-
-                // --- Final Setup ---
-                doneBtn.onclick = () => { if (!doneBtn.disabled) finishItemSelection(); };
-                updateCounterDisplay(); // Initial call
                 modal.classList.remove('hidden');
             }
 
-            function closeModal() {
-                if (currentSelectedItem) {
-                    currentSelectedItem.classList.remove('item-selected');
-                    currentSelectedItem.classList.add('item-waiting');
-                    updateBinState(currentSelectedItem.closest('.bin-location'));
-                    currentSelectedItem = null;
-                }
+            window.closeInwardingModal = () => {
                 modal.classList.add('hidden');
+                currentSlotId = null;
             }
-            
-            function finishItemSelection() {
-                if (!currentSelectedItem) return;
-                const orderId = currentSelectedItem.dataset.orderId;
-                
-                currentSelectedItem.classList.remove('item-selected', 'item-waiting');
-                currentSelectedItem.classList.add('item-finished');
-                currentSelectedItem.innerHTML = getIconSvg();
-                
-                if (orderData[orderId]) {
-                    orderData[orderId].picked++;
-                    const order = orderData[orderId];
-                    // Check for completion
-                    if (order.items > 0 && order.picked === order.items) {
-                        setTimeout(() => showAnimation('completion-animation', `Order ${orderId} Complete!`), 100);
-                        // Mark the order as completed instead of deleting it
-                        orderData[orderId].completed = true;
-                    }
+
+            function validateInputs() {
+                const toteId = inputToteId.value.trim();
+                const skuId = inputSkuId.value.trim();
+                const count = inputUnitCount.value;
+
+                const isValid = toteId.length > 0 && skuId.length > 0 && count > 0;
+
+                if (isValid) {
+                    modalDoneBtn.disabled = false;
+                    modalDoneBtn.classList.remove('btn-disabled');
+                } else {
+                    modalDoneBtn.disabled = true;
+                    modalDoneBtn.classList.add('btn-disabled');
                 }
-                
-                const parentBin = currentSelectedItem.closest('.bin-location');
-                currentSelectedItem = null;
-                modal.classList.add('hidden');
-                
-                updateBinState(parentBin);
-                updateOrderLegend();
-                checkAllTasksFinished();
             }
 
-            // --- APP INITIALIZATION --- //
-            function initializeApp() {
-                binsGrid.innerHTML = '';
-                let hasSetInitialSelected = false;
-                
-                // Reset item counts
-                Object.values(orderData).forEach(order => {
-                    order.items = 0;
-                    order.picked = 0;
-                });
-                
-                // Recalculate item counts based on current bins
-                binData.forEach(data => {
-                    if (data.items) {
-                        data.items.forEach(item => {
-                            if (orderData[item.orderId]) {
-                                orderData[item.orderId].items++;
-                            }
-                        });
-                    }
-                });
-
-
-                binData.forEach(data => {
-                    const binWrapper = document.createElement('div');
-                    if (data.type === 'empty') {
-                        binWrapper.className = 'bg-white border border-gray-300 rounded-lg p-3 flex flex-col aspect-[2/4]';
-                        binWrapper.innerHTML = `<div class="flex-grow"></div>`;
-                    } else {
-                        binWrapper.className = 'bin-location bg-white rounded-lg p-1 flex flex-col aspect-[2/4] border-waiting';
-                        let gridClass = '', compartmentCount = 0;
-                        if (data.type === '1-compartment') { gridClass = 'grid-cols-1 grid-rows-1'; compartmentCount = 1; }
-                        if (data.type === '2-compartment') { gridClass = 'grid-cols-2 grid-rows-1'; compartmentCount = 2; }
-                        if (data.type === '4-compartment') { gridClass = 'grid-cols-2 grid-rows-2'; compartmentCount = 4; }
-                        
-                        let compartmentsHtml = '';
-                        for (let i = 0; i < compartmentCount; i++) {
-                            const itemData = data.items.find(item => item.compartment === i);
-                            if (itemData && orderData[itemData.orderId]) { // Ensure order exists
-                                const order = orderData[itemData.orderId];
-
-                                let stateClass = 'item-waiting';
-                                if (itemData.initialState === 'selected' && !hasSetInitialSelected) {
-                                    stateClass = 'item-selected';
-                                    hasSetInitialSelected = true;
-                                }
-                                if (itemData.initialState === 'finished') {
-                                    stateClass = 'item-finished';
-                                    order.picked++;
-                                }
-                                
-                                compartmentsHtml += `<div class="rounded-md cursor-pointer transition-all selectable-item ${stateClass} ${order.colorClass}" data-order-id="${itemData.orderId}" data-order-color-class="${order.colorClass}">${stateClass === 'item-finished' ? getIconSvg() : ''}</div>`;
-                            } else {
-                                compartmentsHtml += `<div class="rounded-md item-inactive"></div>`;
-                            }
-                        }
-                        binWrapper.innerHTML = `<div class="flex-grow grid ${gridClass} gap-1">${compartmentsHtml}</div>`;
-                    }
-                    binWrapper.innerHTML += `<p class="text-xs text-center text-primary-dark mt-2">Bin Location:<br>${data.id}</p>`;
-                    binsGrid.appendChild(binWrapper);
-                    if (data.type !== 'empty') updateBinState(binWrapper);
-                });
-
-                document.querySelectorAll('.selectable-item').forEach(item => {
-                    item.addEventListener('click', () => {
-                        if (item.classList.contains('item-finished') || item === currentSelectedItem) {
-                            return;
-                        }
-
-                        if(currentSelectedItem) {
-                           closeModal();
-                        }
-                        
-                        document.querySelectorAll('.item-selected').forEach(prev => {
-                            prev.classList.remove('item-selected');
-                            prev.classList.add('item-waiting');
-                            updateBinState(prev.closest('.bin-location'));
-                        });
-
-                        item.classList.remove('item-waiting');
-                        item.classList.add('item-selected');
-                        updateBinState(item.closest('.bin-location'));
-                        openPickupModal(item);
-                    });
-                });
-                
-                updateOrderLegend();
-                checkAllTasksFinished();
-            }
-            
-            // --- GLOBAL EVENT LISTENERS --- //
-            mainDoneBtn.addEventListener('click', () => {
-                if(mainDoneBtn.disabled) return;
-                mainDoneBtn.disabled = true;
-                showAnimation('new-order-animation');
-                setTimeout(generateNewWave, 2500);
+            [inputToteId, inputSkuId, inputUnitCount].forEach(input => {
+                input.addEventListener('input', validateInputs);
             });
 
-            modal.addEventListener('click', e => { if (e.target.id === 'pickup-modal') closeModal(); });
-            
-            // --- START APP --- //
-            generateInitialData();
+            modalDoneBtn.onclick = () => {
+                if (!currentSlotId) return;
+                
+                if (availableStorageCount > 0) {
+                    availableStorageCount--;
+                    storageCountDisplay.textContent = availableStorageCount;
+                }
+
+                slotData[currentSlotId] = {
+                    status: 'processing',
+                    toteType: '1-partition'
+                };
+
+                const slotIdToReset = currentSlotId;
+
+                closeInwardingModal();
+                initializeApp();
+
+                setTimeout(() => {
+                    if (slotData[slotIdToReset] && slotData[slotIdToReset].status === 'processing') {
+                        slotData[slotIdToReset] = { status: 'completed' };
+                        initializeApp();
+
+                        setTimeout(() => {
+                             if (slotData[slotIdToReset] && slotData[slotIdToReset].status === 'completed') {
+                                slotData[slotIdToReset] = { status: 'empty' };
+                                initializeApp();
+                             }
+                        }, 5000);
+                    }
+                }, 60000);
+            };
+
+            modal.addEventListener('click', e => { if (e.target.id === 'inwarding-modal') closeInwardingModal(); });
+
             initializeApp();
             updateDateTime();
-            setInterval(updateDateTime, 60000); // Update every minute
+            setInterval(updateDateTime, 60000);
         });
     </script>
 
